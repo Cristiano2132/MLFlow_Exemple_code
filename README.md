@@ -42,28 +42,10 @@ Iremos registrar todos os esperimentos e modelos no MLflow. Este projeto abrange
 4. **Subir os containers Docker:**
 
 
-4.1. Construindo a Imagem Docker
 
-Execute o comando abaixo no diretório onde o Dockerfile está localizado para criar a imagem:
-```bash
-docker build -t mlflow_image . 
-```
+Para detalhes sobre configurar e inicializar nosso servidor `MLflow` veja o arquivo [README-CONTAINERS.md](README-CONTAINERS.md)
 
 
-•	-t mlflow_image: Define o nome da imagem como mlflow_image.
-•	.: Indica o contexto de construção no diretório atual.
-
-4.2. Iniciando o Contêiner
-
-Use o comando abaixo para iniciar o contêiner:
-
-```bash
-docker run -it -p 8000:5000 mlflow_image   
-```
-
-
-5. **Acesse o MLflow:**
-   - Abra seu navegador e vá para: `http://localhost:8000`
 
 ## Estrutura do projeto
 Ao trabalhar com MLflow, é importante organizar o projeto de forma clara e escalável, permitindo o rastreamento fácil de experimentos, reprodutibilidade e colaboração. Abaixo está uma estrutura de pastas geralmente recomendada:
@@ -95,6 +77,7 @@ my_mlflow_project/
 ├── README.md                # Documentação do projeto
 └── .gitignore               # Arquivo para ignorar arquivos no Git
 ```
+
 
 Descrição das Pastas
 

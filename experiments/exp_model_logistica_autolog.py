@@ -9,7 +9,7 @@ from mlflow import log_metric, log_param
 import mlflow.sklearn
 from mlflow.models import infer_signature
 
-from create_or_set_mlflow_experiment import set_experiment
+
 
 # Configurar paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +22,26 @@ from models.reg_logistica import build_logistic_model
 from evaluation.calcule_ks import get_ks
 from utils import get_summary
 
+def set_experiment(exp_name: str):
+    # Verifica se o experimento já existe
+    experiment = mlflow.get_experiment_by_name(exp_name)
+    if experiment is None:
+        # Se não existir, cria um novo
+        mlflow.create_experiment(exp_name)
+        print(f"Experimento '{exp_name}' criado.")
+    else:
+        print(f"Usando experimento existente: '{exp_name}'")
+    
+    # Define o experimento como o ativo
+    mlflow.set_experiment(exp_name)
+    
 def main():
     # Configurar URI do MLflow
-    mlflow.set_tracking_uri("http://0.0.0.0:5001/")
-    set_experiment("diabetes_reg_logistica")
+    mlflow.set_tracking_uri("http://0.0.0.0:5002/")
+    exp_name = "diabetes_reg_logistica"
+    set_experiment(exp_name)
+    # Habilitar autolog
+    mlflow.sklearn.autolog()  # Não registra o modelo automaticamente no registry
     
     with mlflow.start_run():
         # Configuração inicial
@@ -93,18 +109,16 @@ def main():
         log_metric("ks_test", ks_test)
         
 
-        # Infer the model signature
         y_pred = model.predict(df.loc[test_index][features])
-        signature = infer_signature(df.loc[test_index][features], y_pred)
         
         print(f"KS no conjunto de treino: {ks_train}")
         print(f"KS no conjunto de teste: {ks_test}")
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="sklearn-model",
-            signature=signature,
-            registered_model_name="sk-learn-logistic_reg-model",
-        )
+        # mlflow.sklearn.log_model(
+        #     sk_model=model,
+        #     artifact_path="sklearn-model",
+        #     signature=signature,
+        #     registered_model_name="diabetes_detection",
+        # )
         
 
 if __name__ == "__main__":

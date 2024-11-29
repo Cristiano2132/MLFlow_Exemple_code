@@ -7,5 +7,8 @@ RUN pip install mlflow
 # Expor a porta padrão usada pelo MLflow
 EXPOSE 5000
 
+# Definir diretório de trabalho para MLflow 
+WORKDIR /mlflow
+
 # Comando para iniciar o servidor MLflow automaticamente
 CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]
