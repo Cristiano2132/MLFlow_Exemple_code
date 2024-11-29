@@ -194,10 +194,4 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 
-.secretes.toml
-/wkd
-.env
-.DS_Store
-temp.py
-/pdf_generator
-/data
+*.csv
