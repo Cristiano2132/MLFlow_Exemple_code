@@ -11,7 +11,7 @@ sys.path.append(str(BASE_DIR / "data"))
 
 from data.load_data import load_data
 from features.feature_engineering import custom_cut
-from evaluation.calcule_ks import get_ks
+from evaluation.metrics import get_ks
 from utils import get_summary
 from mlflow.client import MlflowClient
 import json
@@ -63,12 +63,12 @@ def main():
     test_index = df.drop(train_index).index
     
     # Configurar o MLflow
-    mlflow.set_tracking_uri("http://0.0.0.0:5001/")
-    experiment_name = "diabetes_reg_logistica"
+    mlflow.set_tracking_uri("http://0.0.0.0:5002/")
+    experiment_name = "diabetes_modeling"
     
     # Carregar artefatos
     print("Carregando artefatos do MLflow...")
-    runid = get_run_ids_by_experiment_name(experiment_name)[0]
+    runid = '62b821f9c3654f32a17e129abdea6d72'
     artifact_path = "feature_engineering/bins.json"
     bins_dict = load_artifact_from_mlflow(run_id=runid, artifact_path=artifact_path)
     
@@ -78,7 +78,7 @@ def main():
     print("Artefatos carregados com sucesso!")
     
     print("Carregando modelo...")
-    model_name = "diabetes"
+    model_name = "diabetes_detection"
     model_version = 1
     model = mlflow.pyfunc.load_model(model_uri=f"models:/{model_name}/{model_version}")
     
