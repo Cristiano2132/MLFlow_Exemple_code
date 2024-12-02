@@ -5,22 +5,20 @@ import pandas as pd
 import json
 import pickle
 import mlflow
-from mlflow import log_metric, log_param
 import mlflow.sklearn
-from mlflow.models import infer_signature
-
-
 
 # Configurar paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR / "src"))
 sys.path.append(str(BASE_DIR / "data"))
 
-from data.load_data import load_data, split_data
+from data.load_data import load_data
 from features.feature_engineering import TreeCategizer, WOEEncoder, custom_cut
 from models.reg_logistica import build_logistic_model
-from evaluation.calcule_ks import get_ks
+from evaluation.metrics import get_report_metrics
 from utils import get_summary
+
+
 
 def set_experiment(exp_name: str):
     # Verifica se o experimento já existe
@@ -34,16 +32,20 @@ def set_experiment(exp_name: str):
     
     # Define o experimento como o ativo
     mlflow.set_experiment(exp_name)
+
+
+if __name__ == "__main__":
     
-def main():
     # Configurar URI do MLflow
     mlflow.set_tracking_uri("http://0.0.0.0:5002/")
     exp_name = "diabetes_reg_logistica"
     set_experiment(exp_name)
     # Habilitar autolog
     mlflow.sklearn.autolog()  # Não registra o modelo automaticamente no registry
-    
-    with mlflow.start_run():
+    # if there is active run stop it
+    if mlflow.active_run():
+        mlflow.end_run()
+    with mlflow.start_run(run_name="novo_modelo_lgbm"):
         # Configuração inicial
         data_path = BASE_DIR / "data" / "raw" / "diabetes.csv"
         df = load_data(data_path)
@@ -57,14 +59,10 @@ def main():
         print("Resumo inicial dos dados:")
         print(get_summary(df))
         
-        # Logando informações básicas
-        log_param("data_path", str(data_path))
-        log_param("features", list(features))
-        log_param("label", label)
         
         # Feature engineering
         bins_dict = {}
-        tc = TreeCategizer(df.loc[train_index].dropna())
+        tc = TreeCategizer(df=df.loc[train_index].dropna())
         for feat in features:
             bins_dict[feat] = tc.get_splits(target_column=label, feature_column=feat)
         
@@ -100,26 +98,14 @@ def main():
         y_pred = model.predict(df[features])
         
         df_result = pd.DataFrame({'y': df[label], 'y_pred': y_pred})
-        
-        ks_train = get_ks(df=df_result.loc[train_index], proba_col='y_pred', true_value_col='y')
-        ks_test = get_ks(df=df_result.loc[test_index], proba_col='y_pred', true_value_col='y')
-        
-        # Logando métricas no MLflow
-        log_metric("ks_train", ks_train)
-        log_metric("ks_test", ks_test)
-        
+        report_train = get_report_metrics(df=df_result, proba_col='y_pred', true_value_col='y', base="train")
 
         y_pred = model.predict(df.loc[test_index][features])
-        
-        print(f"KS no conjunto de treino: {ks_train}")
-        print(f"KS no conjunto de teste: {ks_test}")
-        # mlflow.sklearn.log_model(
-        #     sk_model=model,
-        #     artifact_path="sklearn-model",
-        #     signature=signature,
-        #     registered_model_name="diabetes_detection",
-        # )
-        
+        df_result = pd.DataFrame({'y': df.loc[test_index][label], 'y_pred': y_pred})
+        report_test = get_report_metrics(df=df_result, proba_col='y_pred', true_value_col='y', base="test")
+        report = {}
+        report.update(report_train)
+        report.update(report_test)
+        mlflow.log_metrics(report)
+    print("Run finalizado com sucesso!")
 
-if __name__ == "__main__":
-    main()
