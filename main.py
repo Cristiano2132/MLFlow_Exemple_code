@@ -3,6 +3,8 @@ import pickle
 from pathlib import Path
 import mlflow
 import pandas as pd
+import json
+from mlflow.client import MlflowClient
 
 # Configurar paths
 BASE_DIR = Path(__file__).resolve().parent
@@ -13,8 +15,6 @@ from data.load_data import load_data
 from features.feature_engineering import custom_cut
 from evaluation.metrics import get_ks
 from utils import get_summary
-from mlflow.client import MlflowClient
-import json
 
 def get_run_ids_by_experiment_name(experiment_name):
     """Retorna uma lista de run_ids dado o nome do experimento."""
@@ -35,8 +35,6 @@ def get_run_ids_by_experiment_name(experiment_name):
         print(f"Erro ao buscar runs do experimento '{experiment_name}': {e}")
         return []
 
-
-
 def load_artifact_from_mlflow(run_id, artifact_path):
     """Carrega um artefato salvo no MLflow dado o run_id e o artifact_path."""
     try:
@@ -50,7 +48,6 @@ def load_artifact_from_mlflow(run_id, artifact_path):
     except Exception as e:
         print(f"Erro ao baixar o artefato '{artifact_path}': {e}")
         sys.exit(1)
-
 
 def main():
     # Configuração inicial
@@ -69,18 +66,16 @@ def main():
     # Carregar artefatos
     print("Carregando artefatos do MLflow...")
     runid = '62b821f9c3654f32a17e129abdea6d72'
-    artifact_path = "feature_engineering/bins.json"
-    bins_dict = load_artifact_from_mlflow(run_id=runid, artifact_path=artifact_path)
-    
-    artifact_path = "feature_engineering/woe.json"
-    woe_dict = load_artifact_from_mlflow(run_id=runid, artifact_path=artifact_path)
+    bins_dict = load_artifact_from_mlflow(run_id=runid, artifact_path="feature_engineering/bins.json")
+    woe_dict = load_artifact_from_mlflow(run_id=runid, artifact_path="feature_engineering/woe.json")
 
     print("Artefatos carregados com sucesso!")
     
     print("Carregando modelo...")
-    model_name = "diabetes_detection"
-    model_version = 1
-    model = mlflow.pyfunc.load_model(model_uri=f"models:/{model_name}/{model_version}")
+    # para carregar diretamente e fazer predict proba como a seguir utilize o log_personalizado ao invés do autolog
+    model_name = "models:/diabetes_detection"
+    model_version = 2
+    model = mlflow.xgboost.load_model(model_uri=f"{model_name}/{model_version}")
     
     print("Modelo carregado com sucesso!")
     
@@ -93,7 +88,8 @@ def main():
     print(get_summary(df))
     
     # Previsão com o modelo carregado
-    y_pred = model.predict(df[features])
+    y_pred = model.predict_proba(df[features])[:, 1]
+    print(y_pred)
     
     # Avaliação do modelo
     df_result = pd.DataFrame({'y': df[label], 'y_pred': y_pred})
@@ -103,7 +99,5 @@ def main():
     print(f"KS no conjunto de treino: {ks_train}")
     print(f"KS no conjunto de teste: {ks_test}")
 
-
 if __name__ == "__main__":
     main()
-
