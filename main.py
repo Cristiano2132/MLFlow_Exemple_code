@@ -16,24 +16,19 @@ from features.feature_engineering import custom_cut
 from evaluation.metrics import get_ks
 from utils import get_summary
 
-def get_run_ids_by_experiment_name(experiment_name):
-    """Retorna uma lista de run_ids dado o nome do experimento."""
-    try:
-        client = MlflowClient()
-        experiment = client.get_experiment_by_name(experiment_name)
-        
-        if experiment is None:
-            print(f"Experimento '{experiment_name}' não encontrado.")
-            return []
-        
-        runs = client.search_runs(experiment_ids=[experiment.experiment_id])
-        run_ids = [run.info.run_id for run in runs]
-        
-        return run_ids
+def get_latest_model_run_id(model_name, stage="Production"):
+    """Retorna o run_id da versão mais recente do modelo no estágio especificado."""
+    client = MlflowClient()
     
-    except Exception as e:
-        print(f"Erro ao buscar runs do experimento '{experiment_name}': {e}")
-        return []
+    # Obter a versão mais recente do modelo no estágio especificado
+    versions = client.get_latest_versions(model_name, stages=[stage])
+    
+    if not versions:
+        print(f"Nenhuma versão encontrada para o modelo '{model_name}' no estágio '{stage}'.")
+        return None
+    
+    # Retorna o run_id da versão mais recente
+    return versions[0].run_id
 
 def load_artifact_from_mlflow(run_id, artifact_path):
     """Carrega um artefato salvo no MLflow dado o run_id e o artifact_path."""
@@ -49,7 +44,8 @@ def load_artifact_from_mlflow(run_id, artifact_path):
         print(f"Erro ao baixar o artefato '{artifact_path}': {e}")
         sys.exit(1)
 
-def main():
+if __name__ == "__main__":
+    model_name = 'diabetes_detection'
     # Configuração inicial
     data_path = BASE_DIR / "data" / "raw" / "diabetes.csv"
     df = load_data(data_path)
@@ -63,20 +59,21 @@ def main():
     mlflow.set_tracking_uri("http://0.0.0.0:5002/")
     experiment_name = "diabetes_modeling"
     
-    # Carregar artefatos
-    print("Carregando artefatos do MLflow...")
-    runid = '62b821f9c3654f32a17e129abdea6d72'
-    bins_dict = load_artifact_from_mlflow(run_id=runid, artifact_path="feature_engineering/bins.json")
-    woe_dict = load_artifact_from_mlflow(run_id=runid, artifact_path="feature_engineering/woe.json")
-
-    print("Artefatos carregados com sucesso!")
-    
     print("Carregando modelo...")
     # para carregar diretamente e fazer predict proba como a seguir utilize o log_personalizado ao invés do autolog
-    model_name = "models:/diabetes_detection"
-    model_version = 2
-    model = mlflow.xgboost.load_model(model_uri=f"{model_name}/{model_version}")
+    model_uri = f"models:/{model_name}/production"
+    model = mlflow.xgboost.load_model(model_uri=model_uri)
     
+
+    # Carregar artefatos feature_engineering/bins.json e feature_engineering/woe.json
+    print("Carregando artefatos do MLflow...")
+    # Obter o run_id da versão mais recente do modelo 
+    run_id = get_latest_model_run_id(model_name=model_name, stage="Production")
+    bins_dict = load_artifact_from_mlflow(run_id=run_id, artifact_path="feature_engineering/bins.json")
+    woe_dict = load_artifact_from_mlflow(run_id=run_id, artifact_path="feature_engineering/woe.json")
+    print("Artefatos carregados com sucesso!")
+
+
     print("Modelo carregado com sucesso!")
     
     # Transformar os dados
@@ -99,5 +96,3 @@ def main():
     print(f"KS no conjunto de treino: {ks_train}")
     print(f"KS no conjunto de teste: {ks_test}")
 
-if __name__ == "__main__":
-    main()

@@ -44,6 +44,16 @@ def build_model_loader(model_name: str):
         return build_xgb_model
     else:
         raise ValueError(f"Modelo '{model_name}' não reconhecido.")
+    
+def autolog_loader(model_name: str):
+    if model_name == "logistic":
+        return mlflow.sklearn.autolog
+    elif model_name == "lgbm":
+        return mlflow.lightgbm.autolog
+    elif model_name == "xgb":
+        return mlflow.xgboost.autolog
+    else:
+        raise ValueError(f"Modelo '{model_name}' não reconhecido.")
         
         
 if __name__ == "__main__":
@@ -52,16 +62,16 @@ if __name__ == "__main__":
     exp_name = "diabetes_modeling"
     set_experiment(exp_name)
     
-    # Habilitar autolog
-    mlflow.autolog()
+
     
     # Finalizar qualquer run ativa
     if mlflow.active_run():
         mlflow.end_run()
     models = ["logistic", "lgbm", "xgb"]
     for model_name in models:
-
-        with mlflow.start_run(run_name=f"novo_modelo_{model_name}"):
+        autolog = autolog_loader(model_name)
+        autolog()
+        with mlflow.start_run(run_name=f"novo_modelo_{model_name}_v1"):
             # Configuração inicial
             data_path = BASE_DIR / "data" / "raw" / "diabetes.csv"
             df = load_data(data_path)
