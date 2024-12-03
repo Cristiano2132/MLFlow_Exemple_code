@@ -62,6 +62,8 @@ patsy==1.0.1
     # via statsmodels
 pillow==11.0.0
     # via matplotlib
+psycopg2-binary==2.9.10
+    # via -r requirements.in
 py4j==0.10.9.7
     # via hyperopt
 pyparsing==3.2.0
