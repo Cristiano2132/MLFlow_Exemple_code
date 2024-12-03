@@ -44,6 +44,27 @@ def load_artifact_from_mlflow(run_id, artifact_path):
         print(f"Erro ao baixar o artefato '{artifact_path}': {e}")
         sys.exit(1)
 
+
+def get_model_type_by_tag(run_id: str):
+    client = MlflowClient()
+    run_info = client.get_run(run_id)
+    model_type = run_info.data.tags.get("model_type")
+    if not model_type:
+        raise ValueError(f"Não foi possível determinar o tipo do modelo para o run_id: {run_id}")
+    return model_type
+
+def load_model(model_name, model_type, stage:str="Production"):
+    
+    model_uri = f"models:/{model_name}/{stage}"
+    if model_type == "logistic":
+        return mlflow.sklearn.load_model(model_uri=model_uri)
+    elif model_type == "lgbm":
+        return mlflow.lightgbm.load_model(model_uri=model_uri)
+    elif model_type == "xgb":
+        return mlflow.xgboost.load_model(model_uri=model_uri)
+    else:
+        raise ValueError(f"Modelo '{model_name}' não reconhecido.")
+
 if __name__ == "__main__":
     model_name = 'diabetes_detection'
     # Configuração inicial
@@ -59,16 +80,18 @@ if __name__ == "__main__":
     mlflow.set_tracking_uri("http://0.0.0.0:5002/")
     experiment_name = "diabetes_modeling"
     
+    run_id = get_latest_model_run_id(model_name=model_name, stage="Production")
+    model_type = get_model_type_by_tag(run_id=run_id)
+    
     print("Carregando modelo...")
     # para carregar diretamente e fazer predict proba como a seguir utilize o log_personalizado ao invés do autolog
-    model_uri = f"models:/{model_name}/production"
-    model = mlflow.xgboost.load_model(model_uri=model_uri)
     
-
+    
+    model = load_model(model_name=model_name, model_type=model_type, stage="Production")
+    
     # Carregar artefatos feature_engineering/bins.json e feature_engineering/woe.json
     print("Carregando artefatos do MLflow...")
-    # Obter o run_id da versão mais recente do modelo 
-    run_id = get_latest_model_run_id(model_name=model_name, stage="Production")
+
     bins_dict = load_artifact_from_mlflow(run_id=run_id, artifact_path="feature_engineering/bins.json")
     woe_dict = load_artifact_from_mlflow(run_id=run_id, artifact_path="feature_engineering/woe.json")
     print("Artefatos carregados com sucesso!")
@@ -95,4 +118,5 @@ if __name__ == "__main__":
     
     print(f"KS no conjunto de treino: {ks_train}")
     print(f"KS no conjunto de teste: {ks_test}")
-
+    print(model)
+    

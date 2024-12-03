@@ -71,7 +71,7 @@ if __name__ == "__main__":
     for model_name in models:
         autolog = autolog_loader(model_name)
         autolog()
-        with mlflow.start_run(run_name=f"novo_modelo_{model_name}_v1"):
+        with mlflow.start_run(run_name=f"novo_modelo_{model_name}_v2"):
             # Configuração inicial
             data_path = BASE_DIR / "data" / "raw" / "diabetes.csv"
             df = load_data(data_path)
@@ -136,5 +136,6 @@ if __name__ == "__main__":
             report.update(report_train)
             report.update(report_test)
             mlflow.log_metrics(report)
-        
+
+            mlflow.set_tag("model_type", model_name)
         print("Run finalizado com sucesso!")
