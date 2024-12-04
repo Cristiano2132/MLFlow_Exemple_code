@@ -78,15 +78,12 @@ if __name__ == "__main__":
     
     # Configurar o MLflow
     mlflow.set_tracking_uri("http://0.0.0.0:5002/")
-    experiment_name = "diabetes_modeling"
     
     run_id = get_latest_model_run_id(model_name=model_name, stage="Production")
     model_type = get_model_type_by_tag(run_id=run_id)
     
     print("Carregando modelo...")
     # para carregar diretamente e fazer predict proba como a seguir utilize o log_personalizado ao invés do autolog
-    
-    
     model = load_model(model_name=model_name, model_type=model_type, stage="Production")
     
     # Carregar artefatos feature_engineering/bins.json e feature_engineering/woe.json
@@ -119,4 +116,3 @@ if __name__ == "__main__":
     print(f"KS no conjunto de treino: {ks_train}")
     print(f"KS no conjunto de teste: {ks_test}")
     print(model)
-    

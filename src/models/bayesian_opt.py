@@ -26,7 +26,7 @@ def get_ks(df: pd.DataFrame, proba_col: str, true_value_col: str) -> float:
     return ks.statistic
 
 class HyperparameterOptimizer:
-    def __init__(self, model_class: Any, param_space: Dict[str, Any], n_folds: int = 5, n_trials: int = 10, random_state: int = 42):
+    def __init__(self, model: Any, param_space: Dict[str, Any], n_folds: int = 5, n_trials: int = 10, random_state: int = 42):
         """
         Initialize the hyperparameter optimizer.
         
@@ -37,7 +37,7 @@ class HyperparameterOptimizer:
             n_trials (int): Number of optimization trials. Default is 50.
             random_state (int): Random state for reproducibility. Default is 42.
         """
-        self.model_class = model_class
+        self.model = model
         self.param_space = param_space
         self.n_folds = n_folds
         self.n_trials = n_trials
@@ -63,8 +63,7 @@ class HyperparameterOptimizer:
         for train_index, valid_index in strat.split(X, y):
             x_train, x_valid = X.iloc[train_index], X.iloc[valid_index]
             y_train, y_valid = y.iloc[train_index], y.iloc[valid_index]
-
-            clf = self.model_class(**params, random_state=self.random_state)
+            clf = self.model.set_params(**params)
             clf.fit(x_train, y_train)
 
             preds_valid = clf.predict_proba(x_valid)[:, 1]
