@@ -66,7 +66,7 @@ def load_model(model_name, model_type, stage:str="Production"):
         raise ValueError(f"Modelo '{model_name}' não reconhecido.")
 
 if __name__ == "__main__":
-    model_name = 'diabetes_detection'
+    mlflow_model_name = 'diabetes_detection'
     # Configuração inicial
     data_path = BASE_DIR / "data" / "raw" / "diabetes.csv"
     df = load_data(data_path)
@@ -79,12 +79,12 @@ if __name__ == "__main__":
     # Configurar o MLflow
     mlflow.set_tracking_uri("http://0.0.0.0:5002/")
     
-    run_id = get_latest_model_run_id(model_name=model_name, stage="Production")
+    run_id = get_latest_model_run_id(model_name=mlflow_model_name, stage="Production")
     model_type = get_model_type_by_tag(run_id=run_id)
     
     print("Carregando modelo...")
     # para carregar diretamente e fazer predict proba como a seguir utilize o log_personalizado ao invés do autolog
-    model = load_model(model_name=model_name, model_type=model_type, stage="Production")
+    model = load_model(model_name=mlflow_model_name, model_type=model_type, stage="Production")
     
     # Carregar artefatos feature_engineering/bins.json e feature_engineering/woe.json
     print("Carregando artefatos do MLflow...")
